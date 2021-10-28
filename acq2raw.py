@@ -1,203 +1,89 @@
 from __future__ import annotations
-import os
 
-import struct, sys, logging, tempfile, threading, time, multiprocessing
+import logging
+import sys
+from datetime import timedelta
 from pathlib import Path
+from time import perf_counter
+
+import bioread
+import numpy as np
+from bioread.biopac import Channel, Datafile
+
 logging.basicConfig(level=logging.DEBUG)
 
-from bioread import read
-
-from error import true_or_fail
-from progress_bar import updt
-
-def float2bin_ieee32bit(number: float, little_endian: bool = False) -> int:
-    endianness = "f" if little_endian else "!f"
-    bin_rep = ""
-    for c in struct.pack(endianness, number):
-        bin_rep += bin(c).replace("0b", "").rjust(8, "0")
-    return int(bin_rep)
-
-def float2IEEE(number: float, little_endian: bool = False) -> list[bytes]:
-    endianness = "<f" if little_endian else ">f"
-    return [c.to_bytes(length=1, byteorder="little") for c in struct.pack(endianness, number)]
 
 def all_same(items):
     return len(set(items)) < 2
 
-class Counter:
-    count = 0
-    max = 0
 
-    @classmethod
-    def set_max(cls, n):
-        cls.max = n
+def get_acq_instance(file) -> Datafile:
+    if isinstance(file, Path):
+        return bioread.read(str(file))
+    if isinstance(file, Datafile):
+        return file
+    logging.error(f"Given acq_file was not a DataFile nor Path")
+    sys.exit(1)
 
-    @classmethod
-    def update(cls):
-        cls.count += 1
-        updt(cls.max, cls.count)
 
-def channel_data_to_bytes(return_data, nr, channel_data, little_endian):
-    logging.debug(f"Starting with channel {nr}")
-    data = []
-    for data_point in channel_data:
-        for byte in float2IEEE(data_point, little_endian=little_endian):
-            data.append(byte)
-    return_data[nr] = data
-    logging.debug(f"Finishing with channel {nr}")
+class Timer:
+    def __init__(self):
+        self.t0 = perf_counter()
 
-def channel_bytes_to_temp(return_data, nr):
-    logging.debug(f"Starting with channel {nr}")
-    data = return_data[nr]
-    file = tempfile.TemporaryFile("wb")
-    for data_point in data:
-        file.write(data_point)
-    file.seek(0)
-    return_data[nr] = file
-    logging.debug(f"Finishing with channel {nr}")
+    def stop(self, msg=""):
+        t = timedelta(seconds=perf_counter() - self.t0)
+        logging.info(f"{msg}{t}")
+
 
 def acq2raw(
-    file_path: Path,
+    acq_file: Path,
     output_path: Path = None,
     little_endian: bool = False,
-    interweaved: bool = False,
-    channel_indexes = None):
+    channel_indexes=None,
+):
     """
     Writes a raw binary file from AcqKnowledge file
     """
-    raw_folder = Path(output_path) if output_path else file_path.parents[0]
-    raw_file = (raw_folder / file_path.with_suffix(".dat").name).absolute()
+    raw_folder = Path(output_path) if output_path else acq_file.parents[0]
+    raw_file = (raw_folder / acq_file.with_suffix(".dat").name).absolute()
 
-    acq = read(str(file_path))
-    
+    acq = get_acq_instance(acq_file)
+
     if channel_indexes is not None:
-        channels = [acq.channels[i] for i in channel_indexes]
+        channels: list[Channel] = [acq.channels[i] for i in channel_indexes]
     else:
-        channels = acq.channels
+        channels: list[Channel] = acq.channels
 
     nr_channels = len(channels)
-    frequency_devisors = [channel.frequency_divider for channel in channels]
-    point_counts = []
 
     if nr_channels:
-        for channel in channels:
-            point_counts.append(channel.point_count)
-
+        point_counts = [channel.point_count for channel in channels]
         total_points = sum(point_counts)
 
         raw_folder.mkdir(exist_ok=True)
         raw_file.touch(exist_ok=True)
-        """
-        with raw_file.open("wb") as raw:
-            if interweaved:
-                point = 0
-                for i in range(max(point_counts)):
-                    for channel, divisor in zip(channels, frequency_devisors):
-                        if i % divisor == 0:
-                            point += 1
-                            updt(total_points, point)
-                            for byte in float2IEEE(channel.data[int(i / divisor)]):
-                                raw.write(byte)
-            else:
-        """
-        """
-        point = 0
-            
-        def write_channel_data(file, channel_data):
-            logging.debug("Task started")
-            for data_point in channel_data:
-                for byte in float2IEEE(data_point, little_endian=little_endian):
-                    file.write(byte)
-                with threading.Lock():
-                    nonlocal point
-                    point += 1
-                    updt(total_points, point)
-            file.seek(0)
 
-        file_parts = []
-        threads: list[threading.Thread] = []
-        for i, channel in enumerate(channels):
-            new_file = tempfile.TemporaryFile()
-            new_thread = threading.Thread(target=write_channel_data, args=(new_file, channel.data), daemon=True)
-            file_parts.append(new_file)
-            threads.append(new_thread)
-            new_thread.start()
-            logging.debug(f"Thread {i} started")
-        
-        for thread in threads:
-            thread.join()
-        
-            for file in file_parts:
-                raw.write(file.read())
-                file.close()
-                
-                """
-        manager = multiprocessing.Manager()
-        file_parts = manager.dict()
-        
-        t0 = time.perf_counter()
-        processes: list[multiprocessing.Process] = []
-        for i, channel in enumerate(channels):
-            new_p = multiprocessing.Process(target=channel_data_to_bytes, args=(file_parts, i, channel.data, little_endian))
-            processes.append(new_p)
-            new_p.start()
+        t = Timer()
 
-        for proc in processes:
-            proc.join()
-
-        t1 = time.perf_counter()
-        logging.debug(f"Finished transcribing bytes {(t1 - t0) / 60}")
-
-        t0 = time.perf_counter()
-        processes: list[multiprocessing.Process] = []
-        for channel_nr in range(nr_channels):
-            new_p = multiprocessing.Process(target=channel_bytes_to_temp, args=(file_parts, channel_nr))
-            processes.append(new_p)
-            new_p.start()
-
-        for proc in processes:
-            new_p.join()
+        data_type = "<f4" if little_endian else ">f"
+        byte_list = (
+            np.array([channel.data for channel in channels], dtype=data_type)
+            .flatten()
+            .tobytes()
+        )
 
         with raw_file.open("wb") as raw:
-            for channel_nr in range(nr_channels):
-                for file_part in file_parts[channel_nr]:
-                    raw.write(file_part.read())
-                    file_part.close()
-                updt(nr_channels, channel_nr)
-                    
-        t1 = time.perf_counter()
-        logging.debug(f"Finished writing bytes {(t1 - t0) / 60}")
-        """
-        for process in processes:
-            process.join()
-        
-        with raw_file.open("wb") as raw:
-            for file in file_parts:
-                raw.write(file.read())
-                file.close()
+            raw.write(byte_list)
 
-        t0 = time.perf_counter()
-        with raw_file.open("wb") as raw:
-            point = 0
-            for channel in channels:
-                for data_point in channel.data:
-                    point += 1
-                    updt(total_points, point)
-                    for byte in float2IEEE(data_point, little_endian=little_endian):
-                        raw.write(byte)
-        t1 = time.perf_counter()
-        """
+        t.stop("Finished writing raw file. Elapsed time: ")
 
-                
-        if all_same(point_counts):
-            logging.debug(f"Wrote {point_counts[0]} data points for {nr_channels} channels")
-        else:
-            logging.debug(f"Wrote data for {nr_channels} channels:")
-            for channel_nr, count in enumerate(point_counts):
-                logging.debug(f"{channel_nr} - {count} data points")
+        logging.info(
+            f"Wrote {total_points} data points for {nr_channels} channels, total of {raw_file.stat().st_size // pow(2, 20)} MB"
+        )
+
 
 if __name__ == "__main__":
     file = Path("acq_data/Feedback03.acq")
-    output_path = Path("raw")
+    output_path = Path("bva_data")
 
     acq2raw(file, output_path)
