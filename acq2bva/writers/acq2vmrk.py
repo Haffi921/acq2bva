@@ -8,14 +8,16 @@ from bioread.biopac import Channel
 
 
 def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
-    for marker_range, description in marker_map.items():
-        try:
-            if marker in marker_range:
-                return description
-        except TypeError:
-            if marker == marker_range:
-                return description
-    return ""
+    try:
+        for marker_range, description in marker_map.items():
+            try:
+                if marker in marker_range:
+                    return description
+            except TypeError:
+                if marker == marker_range:
+                    return description
+    finally:
+        return ""
 
 
 def find_all_markers(

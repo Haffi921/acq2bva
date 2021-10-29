@@ -1,1 +1,1 @@
-from .writers.acq2bva import acq2bva
+from acq2bva.writers import acq2bva

@@ -17,9 +17,10 @@ class VHDRInfos:
         self.set_settings(infos_settings)
 
     def set_settings(self, infos_settings: dict):
-        for key, value in infos_settings.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        if infos_settings is not None:
+            for key, value in infos_settings.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
 
     def get_name(self) -> str:
         return "[Comment]"
