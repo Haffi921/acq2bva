@@ -1,17 +1,23 @@
 [tool.poetry]
 name = "acq2bva"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "Produces BrainVision Analyzer raw, header and marker files from AcqKnowledge recordings"
+license = "MIT"
 authors = ["Haffi921 <haffi921@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/Haffi921/acq2bva"
+keywords = ["BrainVision", "Analyzer", "AcqKnowledge", "BioPac"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-bioread = {extras = ["all"], version = "^2.1.3"}
+bioread = "^2.1.3"
+
+[tool.poetry.dev-dependencies]
 isort = "^5.9.3"
 black = "^21.9b0"
 
-[tool.poetry.dev-dependencies]
-ipython = "^7.28.0"
+[tool.poetry.scripts]
+acq2bva = "acq2bva.runners.acq2bva:main"
 
 [tool.isort]
 profile = "black"
