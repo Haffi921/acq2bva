@@ -7,7 +7,7 @@ import bioread
 from bioread.biopac import Channel
 
 
-def get_marker_description(marker: int, marker_map: dict) -> str:
+def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
     for marker_range, description in marker_map.items():
         try:
             if marker in marker_range:
@@ -15,10 +15,13 @@ def get_marker_description(marker: int, marker_map: dict) -> str:
         except TypeError:
             if marker == marker_range:
                 return description
+    return ""
 
 
-def find_all_markers(marker_channel: Channel, marker_map: dict) -> list[dict]:
-    def mark_hit():
+def find_all_markers(
+    marker_channel: Channel, marker_map: dict[int, str] = {}
+) -> list[dict]:
+    def mark_hit() -> None:
         markers.append(
             {
                 "type": marker,
@@ -28,7 +31,7 @@ def find_all_markers(marker_channel: Channel, marker_map: dict) -> list[dict]:
             }
         )
 
-    def finish_hit():
+    def finish_hit() -> None:
         markers[-1]["points"] = position - markers[-1]["position"]
 
     markers = []
@@ -65,12 +68,17 @@ def generate_text(data_file: str, marker_list: list[dict]) -> str:
 
 
 def acq2vmrk(
+    # Paths
     output_file: Path,
     data_file: str,
+    # Markers
     marker_channel: Channel,
-    marker_map: dict,
+    marker_map: dict = {},
     expected_nr_markers: int = None,
 ) -> None:
+    """
+    Writes a '.vmrk' file for BrainVision Analyzer
+    """
     marker_list = find_all_markers(marker_channel, marker_map)
     if expected_nr_markers is not None:
         if expected_nr_markers != len(marker_list):

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from acq2bva import acq2bva
+from acq2bva.writers import acq2bva
 
 channel_names = [
     "EMG",
@@ -35,6 +35,7 @@ acq2bva(
     channel_indexes=[0],
     channel_names=["EMG"],
     channel_units=["mV"],
+    write_markers=True,
     marker_channel_index=8,
     marker_map=marker_map,
     expected_nr_markers=4818,
