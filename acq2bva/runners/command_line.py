@@ -38,7 +38,7 @@ def main():
 
     # Channels
     parser.add_argument(
-        "-i", "--ci", "--channel-indexes", nargs="+", metavar="INDEX",
+        "-c", "--ci", "--channel-indexes", nargs="+", metavar="INDEX",
         type=int, dest="channel_indexes",
         help="Indexes of channels to include in raw file. Defaults to all channels.",
     )
