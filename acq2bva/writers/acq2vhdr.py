@@ -4,7 +4,8 @@ from pathlib import Path
 
 import bioread
 from bioread.biopac import Channel
-from util.error import true_or_fail
+
+from acq2bva.util.error import true_or_fail
 
 
 class VHDRInfos:
@@ -127,11 +128,11 @@ class HeaderInfos:
             channels=channels,  # Channels
             samples_per_second=samples_per_second,  # Raw data
             marker_file=marker_file,  # Markers
-            header_settings=header_settings,  # Other settings
+            common_infos=header_settings,  # Other settings
         )
         self.binary_infos = BinaryInfos(
             little_endian=little_endian,  # Raw data
-            header_settings=header_settings,  # Other settings
+            binary_infos=header_settings,  # Other settings
         )
         self.channel_infos = ChannelInfos(
             channels=channels,  # All channels

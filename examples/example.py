@@ -1,6 +1,10 @@
+import logging
 from pathlib import Path
 
-from acq2bva.writers import acq2bva
+from acq2bva import acq2bva
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 channel_names = [
     "EMG",
@@ -30,13 +34,17 @@ marker_map = {
     60: "Practice Block End",
 }
 
-acq2bva(
-    Path("bva_data"),
-    channel_indexes=[0],
-    channel_names=["EMG"],
-    channel_units=["mV"],
-    write_markers=True,
-    marker_channel_index=8,
-    marker_map=marker_map,
-    expected_nr_markers=4818,
-)
+
+if __name__ == "__main__":
+    dir = Path(__file__).parent.resolve()
+    acq2bva(
+        dir / "bva_data",
+        dir / "acq_data",
+        channel_indexes=[0],
+        channel_names=["EMG"],
+        channel_units=["mV"],
+        write_markers=True,
+        marker_channel_index=8,
+        marker_map=marker_map,
+        expected_nr_markers=4818,
+    )

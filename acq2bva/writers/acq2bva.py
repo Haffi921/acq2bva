@@ -3,16 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 
 import bioread
-from util.error import true_or_exit, true_or_fail
-from writers.acq2raw import acq2raw
-from writers.acq2vhdr import acq2vhdr
-from writers.acq2vmrk import acq2vmrk
+
+from acq2bva.util.error import true_or_exit, true_or_fail
+from acq2bva.writers.acq2raw import acq2raw
+from acq2bva.writers.acq2vhdr import acq2vhdr
+from acq2bva.writers.acq2vmrk import acq2vmrk
 
 
 def acq2bva(
     # Paths
     output_folder: Path,
-    acq_folder: Path = Path("acq_data"),
+    acq_folder: Path,
     # Channels
     channel_indexes: list[int] = None,
     channel_names: list[str] = None,
@@ -47,9 +48,10 @@ def acq2bva(
     def get_path_with_suffix(file_name: Path, suffix: str, directory: Path = None):
         new_file_name = file_name.with_suffix(suffix)
         if directory is not None:
-            new_file_name = directory / file_name.name
+            new_file_name = directory / new_file_name.name
         return new_file_name
 
+    
     true_or_exit(
         acq_folder.exists() and acq_folder.is_dir(),
         f"{acq_folder} does not exist / is not a directory",
