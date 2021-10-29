@@ -5,7 +5,7 @@ from pathlib import Path
 import bioread
 from bioread.biopac import Channel
 
-from error import true_or_fail
+from .error import true_or_fail
 
 
 class VHDRInfos:
@@ -126,6 +126,7 @@ def acq2vhdr(
     output_file: Path,
     data_file: str,
     channels: list[Channel],
+    channel_indexes = None,
     marker_file: str = "",
     names: list = None,
     scales: list = None,
@@ -134,6 +135,9 @@ def acq2vhdr(
     little_endian: bool = True,
     header_settings: dict = {},
 ):
+    if channel_indexes is not None:
+        channels = [channels[i] for i in channel_indexes]
+
     header_infos = HeaderInfos(
         data_file,
         channels,

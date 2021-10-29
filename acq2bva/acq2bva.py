@@ -5,10 +5,10 @@ from pathlib import Path
 import bioread
 from bioread.biopac import Channel
 
-from acq2raw import acq2raw
-from acq2vhdr import acq2vhdr
-from acq2vmrk import acq2vmrk
-from error import true_or_exit
+from .acq2raw import acq2raw
+from .acq2vhdr import acq2vhdr
+from .acq2vmrk import acq2vmrk
+from .error import true_or_exit
 
 
 def acq2bva(
@@ -40,11 +40,6 @@ def acq2bva(
     for acq_file in acq_files:
         acq = bioread.read(str(acq_file))
 
-        if channel_indexes is not None:
-            channels: list[Channel] = [acq.channels[i] for i in channel_indexes]
-        else:
-            channels: list[Channel] = acq.channels
-
         output_file = (output_folder / acq_file.with_suffix(".dat").name).absolute()
         output_header = (output_folder / acq_file.with_suffix(".vhdr").name).absolute()
 
@@ -55,14 +50,15 @@ def acq2bva(
         else:
             output_marker = Path("")
 
-        writing_ok = acq2raw(output_file, channels, little_endian)
+        writing_ok = acq2raw(output_file, acq.channels, little_endian, channel_indexes=channel_indexes)
 
         if writing_ok:
             acq2vhdr(
                 output_header,
                 output_file.name,
-                channels,
-                output_marker.name,
+                acq.channels,
+                channel_indexes=channel_indexes,
+                marker_file=output_marker.name,
                 names=channel_names,
                 scales=channel_scales,
                 units=channel_units,
@@ -83,7 +79,7 @@ def acq2bva(
                 acq2vmrk(
                     output_marker,
                     output_file.name,
-                    channels[marker_channel_index],
+                    acq.channels[marker_channel_index],
                     marker_map,
                 )
                 print(

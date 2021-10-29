@@ -32,9 +32,9 @@ marker_map = {
 
 acq2bva(
     Path("bva_data"),
-    channel_indexes=[0, 8],
-    channel_names=["EMG", "Marker"],
-    channel_units=["mV", "Bits"],
-    marker_channel_index=1,
+    channel_indexes=[0],
+    channel_names=["EMG"],
+    channel_units=["mV"],
+    marker_channel_index=8,
     marker_map=marker_map,
 )

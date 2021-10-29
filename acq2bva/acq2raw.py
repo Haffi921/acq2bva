@@ -15,10 +15,9 @@ def all_same(items):
 
 def get_channels(channels, channel_indexes) -> Datafile:
     if isinstance(channels, Path):
-        ch = bioread.read(str(channels)).channels
-        return [ch[i] for i in channel_indexes]
+        return bioread.read(str(channels)).channels
     if isinstance(channels, Datafile):
-        return [channels.channels[i] for i in channel_indexes]
+        return channels.channels
     if isinstance(channels, list) and isinstance(channels[0], Channel):
         return channels
     logging.error(f"Given acq_file was not a Path, Datafile nor list of channels")
@@ -35,6 +34,10 @@ def acq2raw(
     Writes a raw binary file from AcqKnowledge file
     """
     channels = get_channels(channels, channel_indexes)
+    
+    if channel_indexes is not None:
+        channels = [channels[i] for i in channel_indexes]
+
     nr_channels = len(channels)
 
     if nr_channels:

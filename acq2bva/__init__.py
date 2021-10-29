@@ -1,1 +1,1 @@
-from acq2bva import acq2bva
+from acq2bva.acq2bva import acq2bva
