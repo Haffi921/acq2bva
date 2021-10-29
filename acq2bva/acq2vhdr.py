@@ -126,7 +126,7 @@ def acq2vhdr(
     output_file: Path,
     data_file: str,
     channels: list[Channel],
-    channel_indexes = None,
+    channel_indexes: list[int] = None,
     marker_file: str = "",
     names: list = None,
     scales: list = None,

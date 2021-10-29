@@ -22,6 +22,7 @@ def acq2bva(
     write_markers=True,
     marker_channel_index=0,
     marker_map={},
+    expected_nr_markers=None,
 ):
     true_or_exit(
         acq_folder.exists() and acq_folder.is_dir(), "No 'acq_data' folder to work with"
@@ -50,7 +51,9 @@ def acq2bva(
         else:
             output_marker = Path("")
 
-        writing_ok = acq2raw(output_file, acq.channels, little_endian, channel_indexes=channel_indexes)
+        writing_ok = acq2raw(
+            output_file, acq.channels, little_endian, channel_indexes=channel_indexes
+        )
 
         if writing_ok:
             acq2vhdr(
@@ -81,6 +84,7 @@ def acq2bva(
                     output_file.name,
                     acq.channels[marker_channel_index],
                     marker_map,
+                    expected_nr_markers=expected_nr_markers,
                 )
                 print(
                     f"Wrote file {output_folder / output_marker.name}: "

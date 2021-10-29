@@ -16,18 +16,18 @@ marker_map = {
     range(11, 19): "Trial End",
     range(21, 29): "Feedback Start",
     range(31, 39): "Feedback End",
-    (41,): "Correct Response",
-    (42,): "Incorrect Response",
-    (43,): "No Response",
-    (45,): "Target Onset",
+    41: "Correct Response",
+    42: "Incorrect Response",
+    43: "No Response",
+    45: "Target Onset",
     range(51, 59): "Block Start",
     range(61, 69): "Block End",
     range(71, 79): "Practice Trial Start",
     range(81, 89): "Practice Trial End",
     range(91, 99): "Practice Feedback Start",
     range(101, 109): "Practice Feedback End",
-    (50,): "Practice Block Start",
-    (60,): "Practice Block End",
+    50: "Practice Block Start",
+    60: "Practice Block End",
 }
 
 acq2bva(
@@ -37,4 +37,5 @@ acq2bva(
     channel_units=["mV"],
     marker_channel_index=8,
     marker_map=marker_map,
+    expected_nr_markers=4818,
 )

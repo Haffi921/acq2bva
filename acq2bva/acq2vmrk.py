@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import bioread
@@ -8,8 +9,12 @@ from bioread.biopac import Channel
 
 def get_marker_description(marker: int, marker_map: dict) -> str:
     for marker_range, description in marker_map.items():
-        if marker in marker_range:
-            return description
+        try:
+            if marker in marker_range:
+                return description
+        except TypeError:
+            if marker == marker_range:
+                return description
 
 
 def find_all_markers(marker_channel: Channel, marker_map: dict) -> list[dict]:
@@ -60,9 +65,20 @@ def generate_text(data_file: str, marker_list: list[dict]) -> str:
 
 
 def acq2vmrk(
-    output_file: Path, data_file: str, marker_channel: Channel, marker_map: dict
+    output_file: Path,
+    data_file: str,
+    marker_channel: Channel,
+    marker_map: dict,
+    expected_nr_markers: int = None,
 ) -> None:
     marker_list = find_all_markers(marker_channel, marker_map)
+    if expected_nr_markers is not None:
+        if expected_nr_markers != len(marker_list):
+            logging.warning(
+                "Expected number of markers not matching up with marker list. "
+                f"{expected_nr_markers} != {len(marker_list)}"
+            )
+
     marker_text = generate_text(data_file, marker_list)
 
     with output_file.open("wt") as marker:

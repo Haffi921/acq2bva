@@ -34,7 +34,7 @@ def acq2raw(
     Writes a raw binary file from AcqKnowledge file
     """
     channels = get_channels(channels, channel_indexes)
-    
+
     if channel_indexes is not None:
         channels = [channels[i] for i in channel_indexes]
 
