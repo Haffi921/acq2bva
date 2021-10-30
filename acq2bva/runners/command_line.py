@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse, sys
-
+import toml
 
 from pathlib import Path
 
@@ -11,9 +11,42 @@ from acq2bva.__version__ import __version__
 from acq2bva.writers.acq2bva import acq2bva
 
 def main():
+    settings = None
+
+    toml_possibilities = ["settings.toml", "acq2bva.toml", "acq.toml", "bva.tpml"]
+    for toml_file in map(Path, toml_possibilities):
+        if toml_file.is_file():
+            settings = toml.load(toml_file)
+            break
+    
+    use_settings = False
+    acq = None
+
+    if settings is not None:
+        acq_file = settings.get("acq_file")
+        acq_folder = settings.get("acq_folder")
+        output_folder = settings.get("output_folder")
+
+        if output_folder and isinstance(output_folder, str):
+            output_folder = Path(output_folder)
+            if acq_file:
+                if isinstance(acq_file, list):
+                    acq = [Path(acq_item) for acq_item in acq_file]
+                    use_settings = True
+                elif isinstance(acq_file, str):
+                    acq = Path(acq_file)
+                    use_settings = True
+            elif acq_folder and isinstance(acq_folder, str):
+                acq = [Path(acq_folder)]
+                use_settings = True
+    else:
+        settings = {}
+    
     usage = """
     %(prog)s acq_file [acq_file ...] output_folder [optional arguments]
     %(prog)s acq_folder output_folder [optional arguments]
+    %(prog)s [-s] toml_file <if, and only if, the toml file specifies acq_file/folder and output_folder>
+    %(prog)s <if, and only if, a toml file exists that specifies acq_file/folder and output_folder>
     %(prog)s [-h, --help]
     %(prog)s [-v, --version]
     """
@@ -24,17 +57,19 @@ def main():
     )
     parser.add_argument('-v', '--version', action="version", version='%(prog)s version ' + __version__)
     
+
     # Paths
-    parser.add_argument(
-        "acq", nargs="+",
-        type=Path,
-        help="Folder or file(s) to convert",
-    )
-    parser.add_argument(
-        "output_folder", action="store", metavar="output-folder",
-        type=Path,
-        help="Folder to store the BrainVision Analyzer files"
-    )
+    if not use_settings:
+        parser.add_argument(
+            "acq", nargs="+",
+            type=Path,
+            help="Folder or file(s) to convert",
+        )
+        parser.add_argument(
+            "output_folder", action="store", metavar="output-folder",
+            type=Path,
+            help="Folder to store the BrainVision Analyzer files"
+        )
 
     # Channels
     parser.add_argument(
@@ -49,7 +84,7 @@ def main():
         "Useful for renaming channels to something more readable."
     )
     parser.add_argument(
-        "-s", "--scales", "--channel-scales", nargs="+", metavar="SCALE",
+        "--sc", "--scales", "--channel-scales", nargs="+", metavar="SCALE",
         type=str, dest="channel_scales",
         help="Scales for each channel. Defaults to 1 for every channel."
     )
@@ -62,14 +97,14 @@ def main():
 
     # Raw data
     parser.add_argument(
-        "--be", "--big-endian", action="store_false",
+        "--be", "--big-endian",
         dest="little_endian",
         help="Flag to write in big endian format. Defaults to writing in little endian."
     )
     
     # Markers
     parser.add_argument(
-        "-m", "--markers", action="store_true",
+        "-m", "--markers", action="store_const", const=True,
         dest="write_markers",
         help="Flag to write a marker file based on a specific marker channel. "
         "If true, then marker channel (--mc) must be specified. "
@@ -105,9 +140,33 @@ def main():
         "Any setting written in here will override settings configured automatically by this program."
     )
 
+    # Other settings
+    parser.add_argument(
+        "-s", "--settings", action="store", metavar="FILE",
+        type=Path, dest="settings",
+        help="Toml file to any and all settings specified above. "
+        "Any setting written in here will be overwritten by settings in the command line. "
+        "Header settings can be specified here under [header_settings]."
+    )
+
     args = parser.parse_args()
 
-    acq: list[Path] = args.acq
+    if args.settings is not None:
+        settings.update(args.settings)
+
+    if not use_settings:
+        acq: list[Path] = args.acq
+        output_folder: Path = args.output_file
+    
+    for key, val in vars(args).items():
+        if key not in settings or val is not None:
+            settings[key] = val
+
+    if settings["little_endian"] is None:
+        settings["little_endian"] = True
+    
+    if settings["write_markers"] is None:
+        settings["write_markers"] = False
 
     if len(acq) > 1:
         for acq_item in acq:
@@ -115,19 +174,31 @@ def main():
                 parser.print_usage()
                 print("Error: Multiple AcqKnowledge directories given.")
                 sys.exit(1)
+    
+    if isinstance(settings["channel_indexes"], int):
+        settings["channel_indexes"] = [settings["channel_indexes"]]
 
-    if args.write_markers:
-        if args.marker_channel_index is None:
+    if settings["write_markers"]:
+        if settings["marker_channel_index"] is None:
             parser.print_help()
             print("Error: Marker channel not specified.")
             sys.exit(1)
     
-    if args.marker_map is not None:
+    if isinstance(settings["marker_map"], Path):
         print("Error: Marker map file has not been implemented yet.")
         sys.exit(1)
+    elif isinstance(settings["marker_map"], dict):
+        new_map = {}
+        for marker, desc in settings["marker_map"].items():
+            try:
+                start, end = marker.split("-")
+                new_map[range(int(start), int(end)+1)] = desc
+            except:
+                new_map[int(marker)] = desc
+        settings["marker_map"] = new_map
 
-    if isinstance(args.header_settings, Path):
-        if not args.header_settings.exists():
+    if isinstance(settings["header_settings"], Path):
+        if not settings["header_settings"].exists():
             parser.print_usage()
             print("Error: Header settings file does not exist.")
             sys.exit(1)
@@ -142,18 +213,18 @@ def main():
             sys.exit(1)
         
         acq2bva(
-            output_folder=args.output_folder,
+            output_folder=output_folder,
             acq=acq_item,
-            channel_indexes=args.channel_indexes,
-            channel_names=args.channel_names,
-            channel_scales=args.channel_scales,
-            channel_units=args.channel_units,
-            little_endian=args.little_endian,
-            write_markers=args.write_markers,
-            marker_channel_index=args.marker_channel_index,
-            marker_map=args.marker_map,
-            expected_nr_markers=args.expected_nr_markers,
-            header_settings=args.header_settings,
+            channel_indexes=settings["channel_indexes"],
+            channel_names=settings["channel_names"],
+            channel_scales=settings["channel_scales"],
+            channel_units=settings["channel_units"],
+            little_endian=settings["little_endian"],
+            write_markers=settings["write_markers"],
+            marker_channel_index=settings["marker_channel_index"],
+            marker_map=settings["marker_map"],
+            expected_nr_markers=settings["expected_nr_markers"],
+            header_settings=settings["header_settings"],
         )
 
 if __name__ == '__main__':

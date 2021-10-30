@@ -17,39 +17,45 @@ def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
                 if marker == marker_range:
                     return description
     finally:
-        return ""
+        pass
+    return ""
 
 
 def find_all_markers(
     marker_channel: Channel, marker_map: dict[int, str] = {}
 ) -> list[dict]:
+    markers = []
+    marker_hit = False
+    marker = 0
+
     def mark_hit() -> None:
+        desc = get_marker_description(marker, marker_map)
+        if marker_map is not None and desc == "":
+            return False
+
         markers.append(
             {
                 "type": marker,
-                "description": get_marker_description(marker, marker_map),
+                "description": desc,
                 "position": position,
                 "channel": 0,
             }
         )
 
+        return True
+
     def finish_hit() -> None:
         markers[-1]["points"] = position - markers[-1]["position"]
-
-    markers = []
-    marker_hit = False
-    marker = 0
+        return False
 
     for position, data_point in enumerate(marker_channel.data):
         if marker_hit:
             if data_point <= 0.0:
-                finish_hit()
-                marker_hit = False
+                marker_hit = finish_hit()
         else:
             if data_point > 0.0:
                 marker = int(data_point)
-                mark_hit()
-                marker_hit = True
+                marker_hit = mark_hit()
 
     return markers
 
@@ -82,6 +88,7 @@ def acq2vmrk(
     Writes a '.vmrk' file for BrainVision Analyzer
     """
     marker_list = find_all_markers(marker_channel, marker_map)
+
     if expected_nr_markers is not None:
         if expected_nr_markers != len(marker_list):
             logging.warning(
