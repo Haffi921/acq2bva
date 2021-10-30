@@ -10,17 +10,26 @@ from pathlib import Path
 from acq2bva.__version__ import __version__
 from acq2bva.writers.acq2bva import acq2bva
 
+TOML_POSSIBILITES = ["settings.toml", "acq2bva.toml", "acq.toml", "bva.tpml"]
+
 def main():
     settings = None
+    use_settings = False
 
-    toml_possibilities = ["settings.toml", "acq2bva.toml", "acq.toml", "bva.tpml"]
-    for toml_file in map(Path, toml_possibilities):
+    for toml_file in map(Path, TOML_POSSIBILITES):
         if toml_file.is_file():
             settings = toml.load(toml_file)
             break
     
-    use_settings = False
+
+    try:
+        if sys.argv[1] == "-s" or sys.argv[1] == "--settings":
+            settings = toml.load(Path(sys.argv[2]))
+    except:
+        pass
+    
     acq = None
+    output_folder = None
 
     if settings is not None:
         acq_file = settings.get("acq_file")
@@ -43,9 +52,9 @@ def main():
         settings = {}
     
     usage = """
-    %(prog)s acq_file [acq_file ...] output_folder [optional arguments]
-    %(prog)s acq_folder output_folder [optional arguments]
-    %(prog)s [-s] toml_file <if, and only if, the toml file specifies acq_file/folder and output_folder>
+    %(prog)s acq_file [acq_file ...] output_folder [optional args]
+    %(prog)s acq_folder output_folder [optional args]
+    %(prog)s [-s] toml_file [optional args] <if, and only if, the toml file specifies acq_file/folder and output_folder>
     %(prog)s <if, and only if, a toml file exists that specifies acq_file/folder and output_folder>
     %(prog)s [-h, --help]
     %(prog)s [-v, --version]
@@ -70,6 +79,8 @@ def main():
             type=Path,
             help="Folder to store the BrainVision Analyzer files"
         )
+    else:
+        parser.add_argument("rest", nargs=argparse.REMAINDER)
 
     # Channels
     parser.add_argument(
@@ -157,6 +168,10 @@ def main():
     if not use_settings:
         acq: list[Path] = args.acq
         output_folder: Path = args.output_file
+    elif len(args.rest) > 0:
+        if len(args.rest) > 1:
+            output_folder = Path(args.rest.pop())
+        acq = list(map(Path, args.rest))
     
     for key, val in vars(args).items():
         if key not in settings or val is not None:
@@ -167,6 +182,11 @@ def main():
     
     if settings["write_markers"] is None:
         settings["write_markers"] = False
+
+    print(acq)
+    print(output_folder)
+    for key, val in settings.items():
+        print(f"{key} = {val}")
 
     if len(acq) > 1:
         for acq_item in acq:
