@@ -51,7 +51,6 @@ def acq2bva(
             new_file_name = directory / new_file_name.name
         return new_file_name
 
-    
     true_or_exit(
         acq.exists(),
         f"Error: {acq} does not exist",
