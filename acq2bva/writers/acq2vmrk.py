@@ -59,6 +59,38 @@ def find_all_markers(
 
     return markers
 
+def create_marker_list(marker_channel: Channel, marker_map: dict):
+    def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
+        for marker_range, description in marker_map.items():
+            try:
+                if marker in marker_range:
+                    return description
+            except TypeError:
+                if marker == marker_range:
+                    return description
+        return ""
+
+    markers = []
+    SMUDGE_LIMIT = 2
+    marker = 0
+    position = 0
+
+    for pos, data in enumerate(marker_channel):
+        if marker != data:
+            if marker != 0:
+                count = pos - position
+                if count > SMUDGE_LIMIT:
+                    markers.append({
+                        "marker": marker,
+                        "description": get_marker_description(marker, marker_map),
+                        "position": position,
+                        "points": count,
+                        "channel": 0,
+                    })
+            marker = data
+            position = pos
+    
+    return markers
 
 def generate_text(data_file: str, marker_list: list[dict]) -> str:
     return_string = "BrainVision Data Exchange Marker File Version 1.0"
