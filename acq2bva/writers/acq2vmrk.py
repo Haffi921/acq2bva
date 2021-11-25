@@ -30,7 +30,7 @@ def create_marker_list(marker_channel: Channel, marker_map: dict[int, str], SMUD
                 count = pos - position
                 if count > SMUDGE_LIMIT:
                     markers.append({
-                        "type": marker,
+                        "type": int(marker),
                         "description": get_marker_description(marker, marker_map),
                         "position": position,
                         "points": count,
