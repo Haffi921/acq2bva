@@ -84,32 +84,3 @@ def acq2vmrk(
 
     with output_file.open("wt") as marker:
         marker.write(marker_text)
-
-
-if __name__ == "__main__":
-    marker_map = {
-        range(1, 9): "Trial Start",
-        range(11, 19): "Trial End",
-        range(21, 29): "Feedback Start",
-        range(31, 39): "Feedback End",
-        (41,): "Correct Response",
-        (42,): "Incorrect Response",
-        (43,): "No Response",
-        (45,): "Target Onset",
-        range(51, 59): "Block Start",
-        range(61, 69): "Block End",
-        range(71, 79): "Practice Trial Start",
-        range(81, 89): "Practice Trial End",
-        range(91, 99): "Practice Feedback Start",
-        range(101, 109): "Practice Feedback End",
-        (50,): "Practice Block Start",
-        (60,): "Practice Block End",
-    }
-
-    data_file = Path("Feedback03.dat")
-    marker_file = data_file.with_suffix(".vmrk")
-    acq = bioread.read(str(Path("acq_data/Feedback03.acq")))
-
-    marker_list = create_marker_list(acq.channels[-1], marker_map)
-
-    print(generate_text(data_file, marker_list))

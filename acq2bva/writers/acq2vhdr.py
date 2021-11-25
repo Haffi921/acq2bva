@@ -63,12 +63,10 @@ class CommonInfos(VHDRInfos):
 class BinaryInfos(VHDRInfos):
     def __init__(
         self,
-        little_endian: bool = True,  # Raw data
         binary_infos: dict = {},  # Other settings
     ) -> None:
         # Binary Infos settings
         self.BinaryFormat = "IEEE_FLOAT_32"
-        self.UseBigEndianOrder = "NO" if little_endian else "YES"
 
         super().__init__(binary_infos)
 
@@ -116,7 +114,6 @@ class HeaderInfos:
         ch_units: list = None,
         # Raw data
         samples_per_second: float = 2000.0,
-        little_endian: bool = True,
         # Markers
         marker_file: str = None,
         # Other settings
@@ -132,7 +129,6 @@ class HeaderInfos:
             common_infos=header_settings,  # Other settings
         )
         self.binary_infos = BinaryInfos(
-            little_endian=little_endian,  # Raw data
             binary_infos=header_settings,  # Other settings
         )
         self.channel_infos = ChannelInfos(
@@ -164,7 +160,6 @@ def acq2vhdr(
     channel_indexes: list[int] = None,
     # Raw data
     samples_per_second: float = 2000.0,
-    little_endian: bool = True,
     # Markers
     marker_file: str = None,
     # Other settings
@@ -189,7 +184,6 @@ def acq2vhdr(
         ch_units,
         # Raw data
         samples_per_second,
-        little_endian,
         # Markers
         marker_file,
         # Other settings
@@ -199,31 +193,3 @@ def acq2vhdr(
     # Write file
     with output_file.open("wt") as header:
         header.write(header_infos.generate_text())
-
-
-if __name__ == "__main__":
-    data_file = Path("Feedback03.dat")
-    marker_file = data_file.with_suffix(".vmrk")
-    acq = bioread.read(str(Path("acq_data/Feedback03.acq")))
-
-    header = HeaderInfos(
-        data_file.name,
-        acq.channels,
-        marker_file.name,
-        ch_names=[
-            "EMG",
-            "Bit1",
-            "Bit2",
-            "Bit3",
-            "Bit4",
-            "Bit5",
-            "Bit6",
-            "Bit7",
-            "Marker",
-        ],
-        ch_units=["mV", "Bits", "Bits", "Bits", "Bits", "Bits", "Bits", "Bits", "Bits"],
-        samples_per_second=acq.samples_per_second,
-        little_endian=True,
-    )
-
-    print(header.generate_text())

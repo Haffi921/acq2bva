@@ -19,8 +19,6 @@ def acq2raw(
     # Channels
     channels: list[Channel],
     channel_indexes: list[int] = None,
-    # Raw data
-    little_endian: bool = False,
 ) -> bool:
     """
     Writes a raw binary file from AcqKnowledge file
@@ -50,9 +48,8 @@ def acq2raw(
     if len(channels):
         output_file.touch(exist_ok=True)
 
-        data_type = "<f4" if little_endian else ">f"
         byte_list = (
-            np.array([channel.data for channel in channels], dtype=data_type)
+            np.array([channel.data for channel in channels], dtype="<f4")
             .flatten()
             .tobytes()
         )
@@ -65,10 +62,3 @@ def acq2raw(
 
     # Return writing did not happen
     return False
-
-
-if __name__ == "__main__":
-    file = Path("acq_data/Feedback03.acq")
-    output_path = Path("bva_data/Feedback03.dat")
-
-    acq2raw(output_path, file)

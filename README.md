@@ -19,6 +19,9 @@ usage:
     acq2bva -hh                Show the full help message with information on optional args and exit
     acq2bva [-v, --version]    Show program's version number and exit
 
+    acq2bva [-p, --pc, --print_channels]
+                                Print number and name of each channel, and exit
+
 
 Path variables
   Either:
@@ -43,10 +46,6 @@ Channel Variables:
 
   -u UNIT [UNIT ...], --units UNIT [UNIT ...], --channel-units UNIT [UNIT ...]
         Description: Units for each channel. Defaults to units given by AcqKnowledge. Useful for fixing wrong units in recording.
-
-Raw Data Variables:
-  --be LITTLE_ENDIAN, --big-endian LITTLE_ENDIAN
-        Description: Flag to write in big endian format. Defaults to writing in little endian.
 
 Marker Variables:
   -m, --markers

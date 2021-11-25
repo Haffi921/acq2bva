@@ -50,14 +50,6 @@ def create_parser():
         dest="channel_units",
     )
 
-    # Raw data
-    parser.add_argument(
-        "--be",
-        "--big-endian",
-        type=bool,
-        dest="little_endian",
-    )
-
     # Markers
     parser.add_argument(
         "-m",
@@ -84,6 +76,7 @@ def create_parser():
         "--expected-nr-markers",
         action="store",
         type=int,
+        dest="expected_nr_markers"
     )
 
     # Other settings

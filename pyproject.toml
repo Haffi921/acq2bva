@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "acq2bva"
-version = "1.3.7"
+version = "1.4.0"
 description = "Produces BrainVision Analyzer raw, header and marker files from AcqKnowledge recordings"
 license = "MIT"
 authors = ["Haffi921 <haffi921@gmail.com>"]

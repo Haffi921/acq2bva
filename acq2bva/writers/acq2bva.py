@@ -19,8 +19,6 @@ def acq2bva(
     channel_names: list[str] = None,
     channel_scales: list[int] = None,
     channel_units: list[str] = None,
-    # Raw data
-    little_endian: bool = True,
     # Markers
     write_markers: bool = False,
     marker_channel_index: int = None,
@@ -86,8 +84,6 @@ def acq2bva(
             # Channels
             channels=acq_data.channels,
             channel_indexes=channel_indexes,
-            # Raw data
-            little_endian=little_endian,
         )
 
         if writing_ok:
@@ -103,7 +99,6 @@ def acq2bva(
                 channel_indexes=channel_indexes,
                 # Raw data
                 samples_per_second=acq_data.samples_per_second,
-                little_endian=little_endian,
                 # Markers
                 marker_file=output_marker.name if write_markers else None,
                 # Other settings

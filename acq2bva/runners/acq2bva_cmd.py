@@ -58,44 +58,38 @@ def main():
     def load_settings():
         settings = {}
 
-        if args.settings is not None:
-            with args.settings.open() as f:
-                settings = toml.load(f)
-        else:
-            for toml_file in map(Path, TOML_POSSIBILITES):
-                if toml_file.is_file():
-                    with toml_file.open() as f:
-                        settings = toml.load(f)
-                    break
+        for toml_file in [args.settings, *TOML_POSSIBILITES]:
+            if toml_file is not None and Path(toml_file).is_file():
+                with Path(toml_file).open() as f:
+                    settings = {
+                        "write_markers": False,
+                        **toml.load(f)
+                    }
+                break
         
         for key, val in vars(args).items():
             if key not in settings or val is not None:
                 settings[key] = val
 
-        return {
-            "little_endian": True,
-            "write_markers": False,
-            **settings
-        }
+        return settings
             
     def determine_input_and_output(settings):
         acq = None
         output_folder = None
 
-        if settings != {}:
-            acq_file = settings.get("acq_file")
-            acq_folder = settings.get("acq_folder")
-            output_folder = settings.get("output_folder")
+        acq_file = settings.get("acq_file")
+        acq_folder = settings.get("acq_folder")
+        output_folder = settings.get("output_folder")
 
-            if output_folder and isinstance(output_folder, str):
-                output_folder = Path(output_folder)
-                if acq_file:
-                    if isinstance(acq_file, list):
-                        acq = [Path(acq_item) for acq_item in acq_file]
-                    elif isinstance(acq_file, str):
-                        acq = [Path(acq_file)]
-                elif acq_folder and isinstance(acq_folder, str):
-                    acq = [Path(acq_folder)]
+        if output_folder and isinstance(output_folder, str):
+            output_folder = Path(output_folder)
+            if acq_file:
+                if isinstance(acq_file, list):
+                    acq = [Path(acq_item) for acq_item in acq_file]
+                elif isinstance(acq_file, str):
+                    acq = [Path(acq_file)]
+            elif acq_folder and isinstance(acq_folder, str):
+                acq = [Path(acq_folder)]
 
         if len(args.rest) > 0:
             if len(args.rest) > 1:
@@ -169,22 +163,26 @@ def main():
 
     for acq_item in acq:
         if not acq_item.exists():
-            parser.print_usage()
-            print(f"\nError: {acq_item} is does not exist")
-            sys.exit(1)
+            fatal_exit(f"\nError: {acq_item} is does not exist")
 
         acq2bva(
+            # Paths
             output_folder=output_folder,
             acq=acq_item,
+
+            # Channels
             channel_indexes=settings["channel_indexes"],
             channel_names=settings["channel_names"],
             channel_scales=settings["channel_scales"],
             channel_units=settings["channel_units"],
-            little_endian=settings["little_endian"],
+
+            # Markers
             write_markers=settings["write_markers"],
             marker_channel_index=settings["marker_channel_index"],
             marker_map=settings["marker_map"],
             expected_nr_markers=settings["expected_nr_markers"],
+
+            # Other
             header_settings=settings["header_settings"],
         )
 

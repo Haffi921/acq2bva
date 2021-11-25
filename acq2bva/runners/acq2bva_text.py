@@ -42,10 +42,6 @@ Channel Variables:
   -u UNIT [UNIT ...], --units UNIT [UNIT ...], --channel-units UNIT [UNIT ...]
         Description: Units for each channel. Defaults to units given by AcqKnowledge. Useful for fixing wrong units in recording.
 
-Raw Data Variables:
-  --be LITTLE_ENDIAN, --big-endian LITTLE_ENDIAN
-        Description: Flag to write in big endian format. Defaults to writing in little endian.
-
 Marker Variables:
   -m, --markers
         Description: Flag to write a marker file based on a specific marker channel. If true, then marker channel (--mc) must be specified. Optionally, marker map file (--mf) can be specified to provide a description of each marker value. Please refer to the ReadMe or Github page for explanation of a marker map file. Additionally, expected number of markers (--em) can be specified and a warning will be displayed if number of markers found does not correspond to that value.
