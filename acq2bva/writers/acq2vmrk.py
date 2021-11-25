@@ -6,60 +6,10 @@ from pathlib import Path
 import bioread
 from bioread.biopac import Channel
 
-
-def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
-    try:
-        for marker_range, description in marker_map.items():
-            try:
-                if marker in marker_range:
-                    return description
-            except TypeError:
-                if marker == marker_range:
-                    return description
-    finally:
-        pass
-    return ""
-
-
-def find_all_markers(
-    marker_channel: Channel, marker_map: dict[int, str] = {}
-) -> list[dict]:
-    markers = []
-    marker_hit = False
-    marker = 0
-
-    def mark_hit() -> None:
-        desc = get_marker_description(marker, marker_map)
-        if marker_map is not None and desc == "":
-            return False
-
-        markers.append(
-            {
-                "type": marker,
-                "description": desc,
-                "position": position,
-                "channel": 0,
-            }
-        )
-
-        return True
-
-    def finish_hit() -> None:
-        markers[-1]["points"] = position - markers[-1]["position"]
-        return False
-
-    for position, data_point in enumerate(marker_channel.data):
-        if marker_hit:
-            if data_point <= 0.0:
-                marker_hit = finish_hit()
-        else:
-            if data_point > 0.0:
-                marker = int(data_point)
-                marker_hit = mark_hit()
-
-    return markers
-
-def create_marker_list(marker_channel: Channel, marker_map: dict):
+def create_marker_list(marker_channel: Channel, marker_map: dict[int, str], SMUDGE_LIMIT = 2):
+    """
+    Finds and returns a list of markers in a marker channel using a marker map.
+    """
     def get_marker_description(marker: int, marker_map: dict[int, str]) -> str:
         for marker_range, description in marker_map.items():
             try:
@@ -71,17 +21,16 @@ def create_marker_list(marker_channel: Channel, marker_map: dict):
         return ""
 
     markers = []
-    SMUDGE_LIMIT = 2
     marker = 0
     position = 0
 
-    for pos, data in enumerate(marker_channel):
+    for pos, data in enumerate(marker_channel.data):
         if marker != data:
             if marker != 0:
                 count = pos - position
                 if count > SMUDGE_LIMIT:
                     markers.append({
-                        "marker": marker,
+                        "type": marker,
                         "description": get_marker_description(marker, marker_map),
                         "position": position,
                         "points": count,
@@ -93,6 +42,9 @@ def create_marker_list(marker_channel: Channel, marker_map: dict):
     return markers
 
 def generate_text(data_file: str, marker_list: list[dict]) -> str:
+    """
+    Generates vmrk file text
+    """
     return_string = "BrainVision Data Exchange Marker File Version 1.0"
 
     return_string += "\n\n[Common Infos]"
@@ -119,7 +71,7 @@ def acq2vmrk(
     """
     Writes a '.vmrk' file for BrainVision Analyzer
     """
-    marker_list = find_all_markers(marker_channel, marker_map)
+    marker_list = create_marker_list(marker_channel, marker_map)
 
     if expected_nr_markers is not None:
         if expected_nr_markers != len(marker_list):
@@ -158,6 +110,6 @@ if __name__ == "__main__":
     marker_file = data_file.with_suffix(".vmrk")
     acq = bioread.read(str(Path("acq_data/Feedback03.acq")))
 
-    marker_list = find_all_markers(acq.channels[-1], marker_map)
+    marker_list = create_marker_list(acq.channels[-1], marker_map)
 
     print(generate_text(data_file, marker_list))
